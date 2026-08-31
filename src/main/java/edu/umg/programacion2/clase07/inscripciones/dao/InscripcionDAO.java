@@ -60,8 +60,8 @@ public class InscripcionDAO {
         try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
              PreparedStatement statement = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) { 
 
-            statement.setLong(1, estudianteId);
-            statement.setLong(2, cursoId);
+            statement.setInt(1, estudianteId);
+            statement.setInt(2, cursoId);
             statement.executeUpdate();
 
             try (ResultSet claves = statement.getGeneratedKeys()) {
@@ -94,8 +94,16 @@ public class InscripcionDAO {
      */
     public boolean registrarNota(int estudianteId, int cursoId, double nota) throws SQLException {
     	String sql = "UPDATE inscripciones SET nota = ? WHERE estudiante_id = ? AND curso_id = ?";
-
-        return false;
+    	   try (Connection conn = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+    		         PreparedStatement ps = conn.prepareStatement(sql)) {
+    		   
+    		   ps.setDouble(1,nota);
+    		   ps.setInt(2, estudianteId);
+    		   ps.setInt(3, cursoId);
+    		   
+    		   int filasAfectadas = ps.executeUpdate();
+    		   return filasAfectadas > 0;
+    	   }
     }
 
     /**
@@ -118,7 +126,25 @@ public class InscripcionDAO {
      */
     public List<Curso> listarCursosDeEstudiante(String carnet) throws SQLException {
         List<Curso> resultado = new ArrayList<>();
-        // TODO: completar (ver pista del JOIN de 3 tablas arriba).
+        String sql = "SELECT c.id, c.nombre, c.creditods"
+        		+ "FROM inscriciones i"
+        		+ "JOIN cursos c ON i.cursos_id = c.id"
+        		+ "JOIN estudiantes e ON i.estudiantes_id = e.id"
+        		+ "WHERE e.carnet = ?";
+        try (Connection conexion = DriverManager.getConnection(URL, USUARIO, PASSWORD);
+                PreparedStatement ps = conexion.prepareStatement(sql)) {
+
+        	ps.setString(1, carnet);
+        	try (ResultSet rs = ps.executeQuery()) {
+        		
+        while(rs.next()) {
+        	
+            Curso curso = new Curso(rs.getInt("id"), rs.getString("nombre"), rs.getInt("creditos") );
+            resultado.add(curso);
+        } 	
+        }
+        }
+
 
         return resultado;
     }
